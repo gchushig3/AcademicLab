@@ -83,16 +83,27 @@ class AcademicTaskViewModel(
         observeTasks()
     }
 
+
     fun onSaveTask() {
         viewModelScope.launch {
             try {
                 addTaskUseCase(newTaskTitle)
                 currentScreen = ScreenType.LIST
                 newTaskTitle = ""
+
             } catch (e: IllegalArgumentException) {
+
+                // REGISTRO DEL ERROR EN LOGCAT
+                android.util.Log.e(
+                    "DESAFIO_EXTRA",
+                    "Validación controlada: ${e.message}"
+                )
+
+                // MOSTRAR EL ERROR EN LA INTERFAZ
                 _uiState.value = AcademicTaskUiState.Error(
                     e.message ?: "Dato inválido"
                 )
+
             } catch (e: Exception) {
                 _uiState.value = AcademicTaskUiState.Error(
                     "Error al guardar: ${e.localizedMessage}"
