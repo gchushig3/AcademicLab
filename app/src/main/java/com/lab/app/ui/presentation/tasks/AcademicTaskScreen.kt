@@ -109,12 +109,24 @@ fun AcademicTaskListScreen(
                 }
 
                 is AcademicTaskUiState.Error -> {
-                    Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Button(
+                            onClick = { viewModel.onRetry() }
+                        ) {
+                            Text("Reintentar")
+                        }
+                    }
                 }
+
             }
         }
     }
@@ -152,6 +164,16 @@ fun AcademicTaskCreateScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            val uiState by viewModel.uiState.collectAsState()
+
+            if (uiState is AcademicTaskUiState.Error) {
+                Text(
+                    text = (uiState as AcademicTaskUiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
             Spacer(
                 modifier = Modifier.height(24.dp)
             )
@@ -170,13 +192,12 @@ fun AcademicTaskCreateScreen(
                 }
 
                 Button(
-                    onClick = {
-                        viewModel.onSaveTask()
-                    },
-                    enabled = viewModel.newTaskTitle.isNotBlank()
+                    onClick = { viewModel.onSaveTask() },
+                    enabled = true
                 ) {
                     Text("Guardar")
                 }
+
             }
         }
     }

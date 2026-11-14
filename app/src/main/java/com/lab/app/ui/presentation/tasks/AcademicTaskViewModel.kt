@@ -5,11 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-
 import com.lab.app.domain.repository.AcademicTaskRepository
 import com.lab.app.domain.usecase.AddTaskUseCase
 import com.lab.app.domain.usecase.GetTasksUseCase
-
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -80,20 +78,21 @@ class AcademicTaskViewModel(
         newTaskTitle = newTitle
     }
 
-    fun onSaveTask() {
-        if (newTaskTitle.isBlank()) return
+    fun onRetry() {
+        currentScreen = ScreenType.LIST
+        observeTasks()
+    }
 
+    fun onSaveTask() {
         viewModelScope.launch {
             try {
                 addTaskUseCase(newTaskTitle)
                 currentScreen = ScreenType.LIST
                 newTaskTitle = ""
-
             } catch (e: IllegalArgumentException) {
                 _uiState.value = AcademicTaskUiState.Error(
                     e.message ?: "Dato inválido"
                 )
-
             } catch (e: Exception) {
                 _uiState.value = AcademicTaskUiState.Error(
                     "Error al guardar: ${e.localizedMessage}"

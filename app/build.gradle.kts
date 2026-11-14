@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.ecotrip.app"
+    namespace = "com.lab.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.ecotrip.app"
+        applicationId = "com.lab.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
