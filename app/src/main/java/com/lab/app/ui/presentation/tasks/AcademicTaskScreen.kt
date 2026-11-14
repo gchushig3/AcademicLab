@@ -1,105 +1,213 @@
+package com.lab.app.ui.presentation.tasks
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.lab.app.domain.model.AcademicTask
 
-import com.lab.app.domain.repository.AcademicTaskRepository
-import com.lab.app.domain.usecase.AddTaskUseCase
-import com.lab.app.domain.usecase.GetTasksUseCase
-import com.lab.app.ui.presentation.tasks.AcademicTaskUiState
-import com.lab.app.ui.presentation.tasks.ScreenType
-
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-
-class AcademicTaskViewModel(
-    private val getTasksUseCase: GetTasksUseCase,
-    private val addTaskUseCase: AddTaskUseCase,
-    private val repository: AcademicTaskRepository
-) : ViewModel() {
-
-    // Estado mutable interno oculto
-    private val _uiState = MutableStateFlow<AcademicTaskUiState>(
-        AcademicTaskUiState.Loading
-    )
-
-    // Estado público de solo lectura
-    val uiState: StateFlow<AcademicTaskUiState> = _uiState.asStateFlow()
-
-    // Estado de navegación
-    var currentScreen by mutableStateOf(ScreenType.LIST)
-        private set
-
-    // Campo del formulario
-    var newTaskTitle by mutableStateOf("")
-        private set
-
-    init {
-        observeTasks()
+@Composable
+fun AcademicTaskApp(
+    viewModel: AcademicTaskViewModel
+) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        when (viewModel.currentScreen) {
+            ScreenType.LIST -> AcademicTaskListScreen(viewModel)
+            ScreenType.CREATE -> AcademicTaskCreateScreen(viewModel)
+        }
     }
+}
 
-    private fun observeTasks() {
-        viewModelScope.launch {
-            try {
-                getTasksUseCase().collect { taskList ->
-                    _uiState.value = AcademicTaskUiState.Success(taskList)
+@Composable
+fun AcademicTaskListScreen(
+    viewModel: AcademicTaskViewModel
+) {
+    // Suscripción al flujo inmutable que dispara recomposiciones inteligentes
+    val uiState by viewModel.uiState.collectAsState()
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    viewModel.onNavigateToCreate()
                 }
-            } catch (e: Exception) {
-                _uiState.value = AcademicTaskUiState.Error(
-                    "Error crítico al cargar el listado: ${e.localizedMessage}"
+            ) {
+                Text(
+                    text = "+",
+                    style = MaterialTheme.typography.titleLarge
                 )
             }
         }
-    }
+    ) { paddingValues ->
 
-    fun onTaskCheckedChange(taskId: String) {
-        viewModelScope.launch {
-            try {
-                repository.toggleTaskCompletion(taskId)
-            } catch (e: Exception) {
-                _uiState.value = AcademicTaskUiState.Error(
-                    "No se pudo actualizar el estado de la tarea."
-                )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+
+            when (val state = uiState) {
+
+                is AcademicTaskUiState.Loading -> {
+                    CircularProgressIndicator()
+                }
+
+                is AcademicTaskUiState.Success -> {
+
+                    if (state.tasks.isEmpty()) {
+
+                        Text(
+                            text = "No tienes tareas registradas.",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                    } else {
+
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp)
+                        ) {
+                            items(state.tasks) { task ->
+                                AcademicTaskRow(
+                                    task = task,
+                                    onCheckedChange = {
+                                        viewModel.onTaskCheckedChange(task.id)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                is AcademicTaskUiState.Error -> {
+                    Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
     }
+}
 
-    fun onNavigateToCreate() {
-        newTaskTitle = ""
-        currentScreen = ScreenType.CREATE
-    }
+@Composable
+fun AcademicTaskCreateScreen(
+    viewModel: AcademicTaskViewModel
+) {
+    Scaffold { paddingValues ->
 
-    fun onNavigateToList() {
-        currentScreen = ScreenType.LIST
-    }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
 
-    fun onTaskTitleChange(newTitle: String) {
-        newTaskTitle = newTitle
-    }
+            Text(
+                text = "Nueva Tarea Académica",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
 
-    fun onSaveTask() {
-        if (newTaskTitle.isBlank()) return
+            OutlinedTextField(
+                value = viewModel.newTaskTitle,
+                onValueChange = { newTitle ->
+                    viewModel.onTaskTitleChange(newTitle)
+                },
+                label = {
+                    Text("Título descriptivo")
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        viewModelScope.launch {
-            try {
-                addTaskUseCase(newTaskTitle)
+            Spacer(
+                modifier = Modifier.height(24.dp)
+            )
 
-                currentScreen = ScreenType.LIST
-                newTaskTitle = ""
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
 
-            } catch (e: IllegalArgumentException) {
-                _uiState.value = AcademicTaskUiState.Error(
-                    e.message ?: "Dato inválido"
-                )
+                OutlinedButton(
+                    onClick = {
+                        viewModel.onNavigateToList()
+                    }
+                ) {
+                    Text("Cancelar")
+                }
 
-            } catch (e: Exception) {
-                _uiState.value = AcademicTaskUiState.Error(
-                    "Error al guardar: ${e.localizedMessage}"
-                )
+                Button(
+                    onClick = {
+                        viewModel.onSaveTask()
+                    },
+                    enabled = viewModel.newTaskTitle.isNotBlank()
+                ) {
+                    Text("Guardar")
+                }
             }
         }
+    }
+}
+
+@Composable
+fun AcademicTaskRow(
+    task: AcademicTask,
+    onCheckedChange: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Checkbox(
+            checked = task.isCompleted,
+            onCheckedChange = { _ ->
+                onCheckedChange()
+            }
+        )
+
+        Spacer(
+            modifier = Modifier.width(16.dp)
+        )
+
+        Text(
+            text = task.title,
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }
