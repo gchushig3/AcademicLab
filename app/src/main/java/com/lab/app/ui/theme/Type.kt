@@ -1,4 +1,4 @@
-package com.ecotrip.app.ui.theme
+package com.lab.app.ui.theme
 
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape

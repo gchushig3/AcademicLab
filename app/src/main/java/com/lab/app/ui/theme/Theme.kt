@@ -1,4 +1,4 @@
-package com.ecotrip.app.ui.theme
+package com.lab.app.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
